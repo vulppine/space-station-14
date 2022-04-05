@@ -156,7 +156,7 @@ namespace Content.Client.Preferences.UI
                 var humanoid = profile as HumanoidCharacterProfile;
                 if (humanoid is not null)
                 {
-                    var dummy = prototypeManager.Index<SpeciesPrototype>(humanoid.Species).DollPrototype;
+                    var dummy = prototypeManager.Index<SpeciesPrototype>(humanoid.Appearance.Species).DollPrototype;
                     _previewDummy = entityManager.SpawnEntity(dummy, MapCoordinates.Nullspace);
                 }
                 else

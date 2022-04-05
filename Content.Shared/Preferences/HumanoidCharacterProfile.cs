@@ -34,7 +34,6 @@ namespace Content.Shared.Preferences
 
         private HumanoidCharacterProfile(
             string name,
-            string species,
             int age,
             Sex sex,
             Gender gender,
@@ -46,7 +45,6 @@ namespace Content.Shared.Preferences
             List<string> antagPreferences)
         {
             Name = name;
-            Species = species;
             Age = age;
             Sex = sex;
             Gender = gender;
@@ -63,7 +61,7 @@ namespace Content.Shared.Preferences
             HumanoidCharacterProfile other,
             Dictionary<string, JobPriority> jobPriorities,
             List<string> antagPreferences)
-            : this(other.Name, other.Species, other.Age, other.Sex, other.Gender, other.Appearance, other.Clothing, other.Backpack,
+            : this(other.Name, other.Age, other.Sex, other.Gender, other.Appearance, other.Clothing, other.Backpack,
                 jobPriorities, other.PreferenceUnavailable, antagPreferences)
         {
         }
@@ -76,7 +74,6 @@ namespace Content.Shared.Preferences
 
         public HumanoidCharacterProfile(
             string name,
-            string species,
             int age,
             Sex sex,
             Gender gender,
@@ -86,7 +83,7 @@ namespace Content.Shared.Preferences
             IReadOnlyDictionary<string, JobPriority> jobPriorities,
             PreferenceUnavailableMode preferenceUnavailable,
             IReadOnlyList<string> antagPreferences)
-            : this(name, species, age, sex, gender, appearance, clothing, backpack, new Dictionary<string, JobPriority>(jobPriorities),
+            : this(name, age, sex, gender, appearance, clothing, backpack, new Dictionary<string, JobPriority>(jobPriorities),
                 preferenceUnavailable, new List<string>(antagPreferences))
         {
         }
@@ -95,7 +92,6 @@ namespace Content.Shared.Preferences
         {
             return new(
                 "John Doe",
-                SpeciesManager.DefaultSpecies,
                 MinimumAge,
                 Sex.Male,
                 Gender.Male,
@@ -114,8 +110,6 @@ namespace Content.Shared.Preferences
         {
             var random = IoCManager.Resolve<IRobustRandom>();
 
-            var species = random.Pick(IoCManager.Resolve<IPrototypeManager>()
-                .EnumeratePrototypes<SpeciesPrototype>().Where(x => x.RoundStart).ToArray()).ID;
             var sex = random.Prob(0.5f) ? Sex.Male : Sex.Female;
             var gender = sex == Sex.Male ? Gender.Male : Gender.Female;
 
@@ -125,7 +119,7 @@ namespace Content.Shared.Preferences
             var name = $"{firstName} {lastName}";
             var age = random.Next(MinimumAge, MaximumAge);
 
-            return new HumanoidCharacterProfile(name, species, age, sex, gender, HumanoidCharacterAppearance.Random(sex), ClothingPreference.Jumpsuit, BackpackPreference.Backpack,
+            return new HumanoidCharacterProfile(name, age, sex, gender, HumanoidCharacterAppearance.Random(sex), ClothingPreference.Jumpsuit, BackpackPreference.Backpack,
                 new Dictionary<string, JobPriority>
                 {
                     {SharedGameTicker.FallbackOverflowJob, JobPriority.High}
@@ -133,7 +127,6 @@ namespace Content.Shared.Preferences
         }
 
         public string Name { get; private set; }
-        public string Species { get; private set; }
         public int Age { get; private set; }
         public Sex Sex { get; private set; }
         public Gender Gender { get; private set; }
@@ -164,12 +157,6 @@ namespace Content.Shared.Preferences
         {
             return new(this) { Gender = gender };
         }
-
-        public HumanoidCharacterProfile WithSpecies(string species)
-        {
-            return new(this) { Species = species };
-        }
-
 
         public HumanoidCharacterProfile WithCharacterAppearance(HumanoidCharacterAppearance appearance)
         {
@@ -382,7 +369,6 @@ namespace Content.Shared.Preferences
             return HashCode.Combine(
                 HashCode.Combine(
                     Name,
-                    Species,
                     Age,
                     Sex,
                     Gender,

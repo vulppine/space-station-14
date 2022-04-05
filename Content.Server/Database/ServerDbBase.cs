@@ -174,7 +174,6 @@ namespace Content.Server.Database
 
             return new HumanoidCharacterProfile(
                 profile.CharacterName,
-                profile.Species,
                 profile.Age,
                 sex,
                 gender,
@@ -185,7 +184,8 @@ namespace Content.Server.Database
                     profile.FacialHairName,
                     Color.FromHex(profile.FacialHairColor),
                     Color.FromHex(profile.EyeColor),
-                    Color.FromHex(profile.SkinColor)
+                    Color.FromHex(profile.SkinColor),
+                    profile.Species
                 ),
                 clothing,
                 backpack,
@@ -202,7 +202,7 @@ namespace Content.Server.Database
             var entity = new Profile
             {
                 CharacterName = humanoid.Name,
-                Species = humanoid.Species,
+                Species = appearance.Species,
                 Age = humanoid.Age,
                 Sex = humanoid.Sex.ToString(),
                 Gender = humanoid.Gender.ToString(),

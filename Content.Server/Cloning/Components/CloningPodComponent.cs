@@ -141,7 +141,7 @@ namespace Content.Server.Cloning.Components
                         return; // If we can't track down the client, we can't offer transfer. That'd be quite bad.
                     }
 
-                    var speciesProto = _prototype.Index<SpeciesPrototype>(dna.Profile.Species).Prototype;
+                    var speciesProto = _prototype.Index<SpeciesPrototype>(dna.Profile.Appearance.Species).Prototype;
                     var mob = _entities.SpawnEntity(speciesProto, _entities.GetComponent<TransformComponent>(Owner).MapPosition);
 
 

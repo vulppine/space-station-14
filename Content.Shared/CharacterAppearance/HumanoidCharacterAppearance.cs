@@ -1,4 +1,7 @@
-﻿using Robust.Shared.Random;
+﻿using System.Linq;
+using Content.Shared.Species;
+using Robust.Shared.Prototypes;
+using Robust.Shared.Random;
 using Robust.Shared.Serialization;
 
 namespace Content.Shared.CharacterAppearance
@@ -11,7 +14,8 @@ namespace Content.Shared.CharacterAppearance
             string facialHairStyleId,
             Color facialHairColor,
             Color eyeColor,
-            Color skinColor)
+            Color skinColor,
+            string species)
         {
             HairStyleId = hairStyleId;
             HairColor = ClampColor(hairColor);
@@ -19,6 +23,7 @@ namespace Content.Shared.CharacterAppearance
             FacialHairColor = ClampColor(facialHairColor);
             EyeColor = ClampColor(eyeColor);
             SkinColor = ClampColor(skinColor);
+            Species = species;
         }
 
         public string HairStyleId { get; }
@@ -27,35 +32,41 @@ namespace Content.Shared.CharacterAppearance
         public Color FacialHairColor { get; }
         public Color EyeColor { get; }
         public Color SkinColor { get; }
+        public string Species { get; }
 
         public HumanoidCharacterAppearance WithHairStyleName(string newName)
         {
-            return new(newName, HairColor, FacialHairStyleId, FacialHairColor, EyeColor, SkinColor);
+            return new(newName, HairColor, FacialHairStyleId, FacialHairColor, EyeColor, SkinColor, Species);
         }
 
         public HumanoidCharacterAppearance WithHairColor(Color newColor)
         {
-            return new(HairStyleId, newColor, FacialHairStyleId, FacialHairColor, EyeColor, SkinColor);
+            return new(HairStyleId, newColor, FacialHairStyleId, FacialHairColor, EyeColor, SkinColor, Species);
         }
 
         public HumanoidCharacterAppearance WithFacialHairStyleName(string newName)
         {
-            return new(HairStyleId, HairColor, newName, FacialHairColor, EyeColor, SkinColor);
+            return new(HairStyleId, HairColor, newName, FacialHairColor, EyeColor, SkinColor, Species);
         }
 
         public HumanoidCharacterAppearance WithFacialHairColor(Color newColor)
         {
-            return new(HairStyleId, HairColor, FacialHairStyleId, newColor, EyeColor, SkinColor);
+            return new(HairStyleId, HairColor, FacialHairStyleId, newColor, EyeColor, SkinColor, Species);
         }
 
         public HumanoidCharacterAppearance WithEyeColor(Color newColor)
         {
-            return new(HairStyleId, HairColor, FacialHairStyleId, FacialHairColor, newColor, SkinColor);
+            return new(HairStyleId, HairColor, FacialHairStyleId, FacialHairColor, newColor, SkinColor, Species);
         }
 
         public HumanoidCharacterAppearance WithSkinColor(Color newColor)
         {
-            return new(HairStyleId, HairColor, FacialHairStyleId, FacialHairColor, EyeColor, newColor);
+            return new(HairStyleId, HairColor, FacialHairStyleId, FacialHairColor, EyeColor, newColor, Species);
+        }
+
+        public HumanoidCharacterAppearance WithSpecies(string newSpecies)
+        {
+            return new(HairStyleId, HairColor, FacialHairStyleId, FacialHairColor, EyeColor, SkinColor, newSpecies);
         }
 
         public static HumanoidCharacterAppearance Default()
@@ -66,7 +77,8 @@ namespace Content.Shared.CharacterAppearance
                 HairStyles.DefaultFacialHairStyle,
                 Color.Black,
                 Color.Black,
-                Color.FromHex("#C0967F")
+                Color.FromHex("#C0967F"),
+                SpeciesManager.DefaultSpecies
             );
         }
 
@@ -76,6 +88,9 @@ namespace Content.Shared.CharacterAppearance
             var prototypes = IoCManager.Resolve<SpriteAccessoryManager>();
             var hairStyles = prototypes.AccessoriesForCategory(SpriteAccessoryCategories.HumanHair);
             var facialHairStyles = prototypes.AccessoriesForCategory(SpriteAccessoryCategories.HumanHair);
+            var species = random.Pick(IoCManager.Resolve<IPrototypeManager>()
+                .EnumeratePrototypes<SpeciesPrototype>().Where(x => x.RoundStart).ToArray()).ID;
+
 
             var newHairStyle = random.Pick(hairStyles).ID;
 
@@ -90,7 +105,7 @@ namespace Content.Shared.CharacterAppearance
                 .WithBlue(RandomizeColor(newHairColor.B));
 
             // TODO: Add random eye and skin color
-            return new HumanoidCharacterAppearance(newHairStyle, newHairColor, newFacialHairStyle, newHairColor, Color.Black, Color.FromHex("#C0967F"));
+            return new HumanoidCharacterAppearance(newHairStyle, newHairColor, newFacialHairStyle, newHairColor, Color.Black, Color.FromHex("#C0967F"), species);
 
             float RandomizeColor(float channel)
             {
@@ -118,6 +133,12 @@ namespace Content.Shared.CharacterAppearance
                 facialHairStyleId = HairStyles.DefaultFacialHairStyle;
             }
 
+            var species = appearance.Species;
+            if (!IoCManager.Resolve<IPrototypeManager>().HasIndex<SpeciesPrototype>(species))
+            {
+                species = SpeciesManager.DefaultSpecies;
+            }
+
             var hairColor = ClampColor(appearance.HairColor);
             var facialHairColor = ClampColor(appearance.FacialHairColor);
             var eyeColor = ClampColor(appearance.EyeColor);
@@ -129,7 +150,8 @@ namespace Content.Shared.CharacterAppearance
                 facialHairStyleId,
                 facialHairColor,
                 eyeColor,
-                skinColor);
+                skinColor,
+                species);
         }
 
         public bool MemberwiseEquals(ICharacterAppearance maybeOther)
@@ -141,6 +163,7 @@ namespace Content.Shared.CharacterAppearance
             if (!FacialHairColor.Equals(other.FacialHairColor)) return false;
             if (!EyeColor.Equals(other.EyeColor)) return false;
             if (!SkinColor.Equals(other.SkinColor)) return false;
+            if (Species != other.Species) return false;
             return true;
         }
     }

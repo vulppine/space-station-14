@@ -266,9 +266,9 @@ namespace Content.Server.Preferences.Managers
                         var prototypeManager = IoCManager.Resolve<IPrototypeManager>();
                         var selectedSpecies = SpeciesManager.DefaultSpecies;
 
-                        if (prototypeManager.TryIndex<SpeciesPrototype>(hp.Species, out var species) && species.RoundStart)
+                        if (prototypeManager.TryIndex<SpeciesPrototype>(hp.Appearance.Species, out var species) && species.RoundStart)
                         {
-                            selectedSpecies = hp.Species;
+                            selectedSpecies = hp.Appearance.Species;
                         }
 
                         newProf = hp
@@ -278,7 +278,7 @@ namespace Content.Server.Preferences.Managers
                             .WithAntagPreferences(
                                 hp.AntagPreferences.Where(antag =>
                                     _protos.HasIndex<AntagPrototype>(antag)))
-                            .WithSpecies(selectedSpecies);
+                            .WithCharacterAppearance(hp.Appearance.WithSpecies(selectedSpecies));
                         break;
                     }
                     default:

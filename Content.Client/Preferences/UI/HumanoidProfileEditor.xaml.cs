@@ -449,7 +449,7 @@ namespace Content.Client.Preferences.UI
         {
             if (Profile is null) return;
 
-            var skin = _prototypeManager.Index<SpeciesPrototype>(Profile.Species).SkinColoration;
+            var skin = _prototypeManager.Index<SpeciesPrototype>(Profile.Appearance.Species).SkinColoration;
 
             switch (skin)
             {
@@ -501,7 +501,7 @@ namespace Content.Client.Preferences.UI
 
         private void RebuildSpriteView()
         {
-            var species = Profile?.Species ?? SpeciesManager.DefaultSpecies;
+            var species = Profile?.Appearance.Species ?? SpeciesManager.DefaultSpecies;
 
             if (_lastSpecies != species)
             {
@@ -579,7 +579,7 @@ namespace Content.Client.Preferences.UI
 
         private void SetSpecies(string newSpecies)
         {
-            Profile = Profile?.WithSpecies(newSpecies);
+            Profile = Profile?.WithCharacterAppearance(Profile.Appearance.WithSpecies(newSpecies));
             OnSkinColorOnValueChanged(CSkin); // Species may have special color prefs, make sure to update it.
             IsDirty = true;
         }
@@ -648,7 +648,7 @@ namespace Content.Client.Preferences.UI
             if (Profile == null)
                 return;
 
-            var skin = _prototypeManager.Index<SpeciesPrototype>(Profile.Species).SkinColoration;
+            var skin = _prototypeManager.Index<SpeciesPrototype>(Profile.Appearance.Species).SkinColoration;
             var color = Color.ToHsv(Profile.Appearance.SkinColor);
 
             switch (skin)
@@ -686,7 +686,7 @@ namespace Content.Client.Preferences.UI
                 return;
             }
 
-            CSpeciesButton.Select(_speciesList.FindIndex(x => x.ID == Profile.Species));
+            CSpeciesButton.Select(_speciesList.FindIndex(x => x.ID == Profile.Appearance.Species));
         }
 
         private void UpdateGenderControls()

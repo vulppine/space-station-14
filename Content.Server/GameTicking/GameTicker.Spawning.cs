@@ -280,7 +280,7 @@ namespace Content.Server.GameTicking
         {
             var coordinates = lateJoin ? GetLateJoinSpawnPoint(station) : GetJobSpawnPoint(job.Prototype.ID, station);
             var entity = EntityManager.SpawnEntity(
-                _prototypeManager.Index<SpeciesPrototype>(profile?.Species ?? SpeciesManager.DefaultSpecies).Prototype,
+                _prototypeManager.Index<SpeciesPrototype>(profile?.Appearance.Species ?? SpeciesManager.DefaultSpecies).Prototype,
                 coordinates);
 
             if (job.StartingGear != null)

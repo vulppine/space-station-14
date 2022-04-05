@@ -122,7 +122,7 @@ namespace Content.Client.Lobby.UI
                 }
                 else
                 {
-                    _previewDummy = _entityManager.SpawnEntity(_prototypeManager.Index<SpeciesPrototype>(selectedCharacter.Species).DollPrototype, MapCoordinates.Nullspace);
+                    _previewDummy = _entityManager.SpawnEntity(_prototypeManager.Index<SpeciesPrototype>(selectedCharacter.Appearance.Species).DollPrototype, MapCoordinates.Nullspace);
                     var viewSouth = MakeSpriteView(_previewDummy.Value, Direction.South);
                     var viewNorth = MakeSpriteView(_previewDummy.Value, Direction.North);
                     var viewWest = MakeSpriteView(_previewDummy.Value, Direction.West);
