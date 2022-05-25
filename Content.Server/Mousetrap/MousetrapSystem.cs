@@ -1,5 +1,5 @@
-using Content.Server.Damage.Systems;
 using Content.Server.Explosion.EntitySystems;
+using Content.Shared.Damage;
 using Content.Shared.Interaction.Events;
 using Content.Shared.Inventory;
 using Content.Shared.Mousetrap;
@@ -11,11 +11,11 @@ public sealed class MousetrapSystem : EntitySystem
 {
     [Dependency] private readonly InventorySystem _inventorySystem = default!;
     [Dependency] private readonly TriggerSystem _triggerSystem = default!;
+    [Dependency] private readonly DamageableSystem _damageableSystem = default!;
 
     public override void Initialize()
     {
         SubscribeLocalEvent<MousetrapComponent, UseInHandEvent>(OnUseInHand);
-        SubscribeLocalEvent<MousetrapComponent, BeforeDamageOnTriggerEvent>(BeforeDamageOnTrigger);
         SubscribeLocalEvent<MousetrapComponent, StepTriggerAttemptEvent>(OnStepTriggerAttempt);
         SubscribeLocalEvent<MousetrapComponent, StepTriggeredEvent>(OnStepTrigger);
     }
@@ -32,11 +32,29 @@ public sealed class MousetrapSystem : EntitySystem
         args.Continue = component.IsActive;
     }
 
-    private void BeforeDamageOnTrigger(EntityUid uid, MousetrapComponent component, BeforeDamageOnTriggerEvent args)
+    private void OnStepTrigger(EntityUid uid, MousetrapComponent component, ref StepTriggeredEvent args)
     {
+        Trigger(uid, args.Tripper, component);
+
+        UpdateVisuals(uid);
+    }
+
+    // This **WAS** its own thing (related to damage on step), but that is NOT how it worked
+    // hilariously, it caused the damage to instead stack several times in a row,
+    // resulting in damage * however many times it stacked
+    private void Trigger(EntityUid uid, EntityUid target, MousetrapComponent? component = null)
+    {
+        if (!Resolve(uid, ref component)
+            || !component.IsActive)
+        {
+            return;
+        }
+
+        var damage = new DamageSpecifier(component.Damage);
+
         foreach (var slot in component.IgnoreDamageIfSlotFilled)
         {
-            if (!_inventorySystem.TryGetSlotContainer(args.Tripper, slot, out var container, out _))
+            if (!_inventorySystem.TryGetSlotContainer(target, slot, out var container, out _))
             {
                 continue;
             }
@@ -45,28 +63,24 @@ public sealed class MousetrapSystem : EntitySystem
             // hurt the entity.
             if (container.ContainedEntity != null)
             {
-                args.Damage *= 0;
-                return;
+                damage = new();
             }
         }
 
-        if (TryComp(uid, out PhysicsComponent? physics))
+        if (TryComp(target, out PhysicsComponent? physics) && !damage.Empty)
         {
             // The idea here is inverse,
             // Small - big damage,
             // Large - small damage
             // yes i punched numbers into a calculator until the graph looked right
-            var scaledDamage = -50 * Math.Atan(physics.Mass - 10) + (25 * Math.PI);
-            args.Damage *= scaledDamage;
+            var scaledDamage = (-50 * Math.Atan(physics.Mass - 10)) + (25 * Math.PI);
+            damage *= scaledDamage;
         }
-    }
 
-    private void OnStepTrigger(EntityUid uid, MousetrapComponent component, ref StepTriggeredEvent args)
-    {
-        component.IsActive = false;
+        _damageableSystem.TryChangeDamage(target, damage);
         _triggerSystem.Trigger(uid);
 
-        UpdateVisuals(uid);
+        component.IsActive = false;
     }
 
     private void UpdateVisuals(EntityUid uid, MousetrapComponent? mousetrap = null, AppearanceComponent? appearance = null)

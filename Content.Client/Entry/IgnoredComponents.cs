@@ -359,7 +359,6 @@ namespace Content.Client.Entry
             "CanEscapeInventory",
             "PowerSink",
             "Mousetrap",
-            "DamageOnTrigger",
             "Wires",
         };
     }
