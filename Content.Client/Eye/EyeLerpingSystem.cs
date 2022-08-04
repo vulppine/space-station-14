@@ -1,4 +1,5 @@
 using System;
+using Content.Client.Gravity;
 using Content.Shared.Movement.Components;
 using Robust.Client.GameObjects;
 using Robust.Client.Graphics;
@@ -18,6 +19,7 @@ public sealed class EyeLerpingSystem : EntitySystem
     [Dependency] private readonly IMapManager _mapManager = default!;
     [Dependency] private readonly IPlayerManager _playerManager = default!;
     [Dependency] private readonly IGameTiming _gameTiming = default!;
+    [Dependency] private readonly GravitySystem _gravitySystem = default!;
 
     // How fast the camera rotates in radians / s
     private const float CameraRotateSpeed = MathF.PI;
@@ -93,6 +95,10 @@ public sealed class EyeLerpingSystem : EntitySystem
         if (_playerManager.LocalPlayer?.ControlledEntity is not {} mob || Deleted(mob))
             return;
 
+        // If the mob is currently in zero-grav, return.
+        if (_gravitySystem.IsWeightless(mob))
+            return;
+
         // We can't lerp if the mob can't move!
         if (!TryComp(mob, out InputMoverComponent? mover))
             return;
@@ -108,6 +114,13 @@ public sealed class EyeLerpingSystem : EntitySystem
             || !_mapManager.TryGetGrid(transform.GridUid, out var grid))
         {
             _toRemove.Add(uid);
+            return;
+        }
+
+        // special case, because if gravity returns we want to immediately start
+        // re-lerping
+        if (_gravitySystem.IsWeightless(uid))
+        {
             return;
         }
 
