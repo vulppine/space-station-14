@@ -51,7 +51,7 @@ public sealed class CrewManifestSystem : EntitySystem
         {
             foreach (var (_, eui) in euis)
             {
-                eui.Close();
+                eui.TryClose();
             }
         }
 

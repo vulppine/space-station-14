@@ -85,6 +85,23 @@ namespace Content.Server.EUI
             _net.ServerSendMessage(msg, eui.Player.ConnectedClient);
         }
 
+        /// <summary>
+        ///     Attempts to close a player's EUI.
+        /// </summary>
+        /// <param name="eui">The EUI to close.</param>
+        /// <returns>True if it could close the EUI over the network, false otherwise.</returns>
+        public bool TryCloseEui(BaseEui eui)
+        {
+            if (!_playerData.ContainsKey(eui.Player))
+            {
+                eui.Shutdown();
+                return false;
+            }
+
+            CloseEui(eui);
+            return true;
+        }
+
         private void RxMsgMessage(MsgEuiMessage message)
         {
             if (!_players.TryGetSessionByChannel(message.MsgChannel, out var ply))

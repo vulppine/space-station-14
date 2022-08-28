@@ -96,6 +96,11 @@ namespace Content.Server.EUI
             Manager.CloseEui(this);
         }
 
+        public bool TryClose()
+        {
+            return Manager.TryCloseEui(this);
+        }
+
         internal void Shutdown()
         {
             Closed();
