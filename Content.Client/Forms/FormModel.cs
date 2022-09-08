@@ -1,5 +1,6 @@
 using System.Reflection;
 using Content.Shared.Forms;
+using Robust.Client.UserInterface;
 using Robust.Shared.Utility;
 
 namespace Content.Client.Forms;
@@ -20,7 +21,7 @@ public sealed class FormModel
     /// <summary>
     ///     The type that this form model represents.
     /// </summary>
-    public Type Type;
+    public readonly Type Type;
 
     public bool IsFormState => Type.IsAssignableFrom(typeof(FormState));
 
@@ -30,40 +31,52 @@ public sealed class FormModel
     private readonly Dictionary<string, IFormField> _inputs = new();
 
     /// <summary>
-    ///     Creates a form model by using an existing object as its state.
+    ///     Creates a form model.
     /// </summary>
-    /// <param name="state"></param>
-    /// <remarks>
-    ///     This is the entry point used primarily by form model generation.
-    ///     If you want to manually create this, try using <see cref="FromType{T}"/>
-    ///     in order to create something without having to first create the required
-    ///     object.
-    /// </remarks>
     public FormModel(Type type)
     {
         IoCManager.InjectDependencies(this);
         Type = type;
     }
 
-    /*
+    #region Field registration
     /// <summary>
-    ///     Creates a form model from a type.
+    ///     Register a single IFormField by name.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <param name="name"></param>
+    /// <param name="field"></param>
     /// <returns></returns>
-    public static FormModel FromType<T>() where T : new()
-    {
-        return new(typeof(T));
-    }
-    */
-
-
     public bool RegisterField(string name, IFormField field)
     {
         field.FieldName = name;
         return _inputs.TryAdd(name, field);
     }
 
+    /// <summary>
+    ///     Recurse through controls to register all controls that
+    ///     are also IFormField.
+    /// </summary>
+    /// <param name="root"></param>
+    public void RegisterControls(Control root)
+    {
+        if (root is IFormField rootFormField && !string.IsNullOrEmpty(root.Name))
+        {
+            RegisterField(root.Name, rootFormField);
+        }
+
+        foreach (var control in root.Children)
+        {
+            if (control is IFormField controlFormField && !string.IsNullOrEmpty(control.Name))
+            {
+                RegisterField(control.Name, controlFormField);
+            }
+
+            RegisterControls(root);
+        }
+    }
+    #endregion
+
+    #region State setters/getters
     /// <summary>
     ///     Set the state of this form model.
     /// </summary>
@@ -137,6 +150,7 @@ public sealed class FormModel
 
         return (T) GetState();
     }
+    #endregion
 
     #region Private API
     private bool SetFieldPropertyValue(object state, MemberInfo member, object value)
