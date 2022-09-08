@@ -53,6 +53,14 @@ public sealed class FormFieldFactory : Dictionary<Type, Func<IFormField>>
 
         return field;
     }
+
+    /// <summary>
+    ///     The default set of form field widgets.
+    /// </summary>
+    public static FormFieldFactory Default = new()
+    {
+        [typeof(string)] = () => new TextFormField()
+    };
 }
 
 /// <summary>
@@ -65,6 +73,9 @@ public sealed class FormFactory
     /// </summary>
     private FormFieldFactory _fieldFactory = new();
 
+    /// <summary>
+    ///     This is what creates a form model.
+    /// </summary>
     private readonly Func<FormModel> _formModel;
 
     public FormModel GetModel()
@@ -72,11 +83,14 @@ public sealed class FormFactory
         return _formModel();
     }
 
-    public FormFactory(Type type, IDynamicTypeFactory? typeFactory = null)
+    public FormFactory(Type type, FormFieldFactory fieldFactory)
     {
-        IoCManager.Resolve(ref typeFactory);
+        _formModel = () => new FormModel(type);
+        _fieldFactory = fieldFactory;
+    }
 
-        _formModel = () => (FormModel) typeFactory.CreateInstance(type);
+    public FormFactory(Type type) : this(type, FormFieldFactory.Default)
+    {
     }
 }
 
@@ -85,22 +99,50 @@ public sealed class FormFactory
 /// </summary>
 public sealed class FormManager
 {
-    /// <summary>
-    ///     Set of factories that generate forms based off of
-    ///     an enum key. The enum key is the important part,
-    ///     as almost all UIs pass in some kind of key.
-    /// </summary>
-    public Dictionary<Enum, FormFactory> _factories = new()
-    {
-        // We add in the generic form types here.
-        [FormKey.Key] = new()
-    };
+    private readonly Dictionary<Type, FormFactory> _factories = new();
 
     /// <summary>
-    ///     Register a new form factory to this enum.
+    ///     Register a type, giving it a custom form factory.
     /// </summary>
-    /// <param name="key"></param>
+    /// <param name="type"></param>
     /// <param name="factory"></param>
-    public void Register(Enum key, FormFactory factory)
-    {}
+    public void RegisterType(Type type, FormFactory factory)
+    {
+        _factories.Add(type, factory);
+    }
+
+    /// <summary>
+    ///     Register a type, giving it the default FormFactory.
+    /// </summary>
+    /// <param name="type"></param>
+    public void RegisterType(Type type)
+    {
+        RegisterType(type, new FormFactory(type));
+    }
 }
+
+public sealed class FormDialogAttribute : Attribute
+{
+    public Type StateType;
+
+    public FormDialogAttribute(Type stateType)
+    {
+        StateType = stateType;
+    }
+}
+
+/// <summary>
+///     Form window. By default, this is the parent class of all window types.
+///     Children of FormWindow can inherit this, and will become a valid
+///     window that can be instianted by FormManager. However, they must specify
+///     an attribute, [FormDialog(typeof(T))], so that the form manager knows that
+///     this window type is for this form dialog type.
+/// </summary>
+[Virtual]
+public class FormWindow : DefaultWindow
+{
+}
+
+[FormDialog(typeof(TextDialogFormState))]
+public sealed class TextDialogFormWindow : FormWindow
+{}

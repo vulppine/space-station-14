@@ -1,3 +1,4 @@
+using System.Net.Mime;
 using Robust.Shared.Serialization;
 using Robust.Shared.Utility;
 
@@ -26,3 +27,36 @@ public abstract class FormState
 // and you'll get the UI fields required.
 public sealed class FormFieldAttribute : Attribute
 {}
+
+/// <summary>
+///     Text dialog form state.
+/// </summary>
+[Serializable, NetSerializable]
+public sealed class TextDialogFormState : FormState
+{
+    /// <summary>
+    ///     The text in this dialog.
+    /// </summary>
+    public string Text = string.Empty;
+}
+
+/// <summary>
+///     FormType. This gives the client more information on what to do
+///     with the form state it receives. A dialog-type form will always
+///     try to open a window with the form embedded into it, while an
+///     embedded form will not try to open a window. Having both flags
+///     is a valid state.
+/// </summary>
+[Flags]
+[Serializable, NetSerializable]
+public enum FormType
+{
+    /// <summary>
+    ///     Embedded into another UI.
+    /// </summary>
+    Embedded,
+    /// <summary>
+    ///     This opens up as its own UI/dialog window.
+    /// </summary>
+    Dialog
+}
