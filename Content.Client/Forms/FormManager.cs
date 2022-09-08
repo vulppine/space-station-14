@@ -69,10 +69,13 @@ public sealed class FormFieldFactory : Dictionary<Type, Func<IFormField>>
     /// <summary>
     ///     The default set of form field widgets.
     /// </summary>
-    public static readonly FormFieldFactory Default = new()
+    public static FormFieldFactory Default()
     {
-        [typeof(string)] = () => new TextFormField()
-    };
+        return new()
+        {
+            [typeof(string)] = () => new TextFormField()
+        };
+    }
 }
 
 /// <summary>
@@ -125,7 +128,7 @@ public sealed class FormFactory
         _fieldFactory = fieldFactory;
     }
 
-    public FormFactory(Type type) : this(type, FormFieldFactory.Default)
+    public FormFactory(Type type) : this(type, FormFieldFactory.Default())
     {
     }
 
@@ -176,8 +179,14 @@ public sealed class FormFactory
 /// </summary>
 public sealed class FormManager
 {
+    /// <summary>
+    ///     Default factory passed into all types. Specify a custom FormFactory, if you want
+    ///     a custom set of FormFields.
+    /// </summary>
+    private readonly FormFieldFactory _defaultFactory = FormFieldFactory.Default();
     private readonly Dictionary<Type, FormFactory> _factories = new();
 
+    #region Registration
     /// <summary>
     ///     Register a type, giving it a custom form factory.
     /// </summary>
@@ -189,13 +198,24 @@ public sealed class FormManager
     }
 
     /// <summary>
-    ///     Register a type, giving it the default FormFactory.
+    ///     Register a type, giving it the default set of widgets registered with this FormManager.
     /// </summary>
     /// <param name="type"></param>
     public void RegisterType(Type type)
     {
-        RegisterType(type, new FormFactory(type));
+        RegisterType(type, new FormFactory(type, _defaultFactory));
     }
+
+    /// <summary>
+    ///     Register a widget constructor for a certain type to the set of default widgets.
+    /// </summary>
+    /// <param name="type"></param>
+    /// <typeparam name="T"></typeparam>
+    public void RegisterWidget<T>(Type type) where T : IFormField, new()
+    {
+        _defaultFactory.Add<T>(type);
+    }
+    #endregion
 
     public bool TryGetFactory(Type type, [NotNullWhen(true)] out FormFactory? factory)
     {
