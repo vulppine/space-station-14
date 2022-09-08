@@ -41,7 +41,7 @@ public sealed class FormFieldFactory : Dictionary<Type, Func<IFormField>>
         Add(type, () => _typeFactory.CreateInstance<T>());
     }
 
-    public IFormField GenerateField(Type fieldType, object? initialValue)
+    public IFormField GenerateField(Type fieldType)
     {
         if (!TryGetValue(fieldType, out var factory))
         {
@@ -49,15 +49,27 @@ public sealed class FormFieldFactory : Dictionary<Type, Func<IFormField>>
         }
 
         var field = factory();
-        field.Value = initialValue ?? field.Value;
 
         return field;
+    }
+
+    public bool TryGenerateField(Type fieldType, [NotNullWhen(true)] out IFormField? field)
+    {
+        field = null;
+        if (!TryGetValue(fieldType, out var factory))
+        {
+            return false;
+        }
+
+        field = factory();
+
+        return true;
     }
 
     /// <summary>
     ///     The default set of form field widgets.
     /// </summary>
-    public static FormFieldFactory Default = new()
+    public static readonly FormFieldFactory Default = new()
     {
         [typeof(string)] = () => new TextFormField()
     };
@@ -73,24 +85,89 @@ public sealed class FormFactory
     /// </summary>
     private FormFieldFactory _fieldFactory = new();
 
-    /// <summary>
-    ///     This is what creates a form model.
-    /// </summary>
-    private readonly Func<FormModel> _formModel;
+    private Type _type;
 
+    /// <summary>
+    ///     Creates a new instance of a form model with the type backing this FormFactory.
+    ///     Use this to insert a model into your controller object.
+    /// </summary>
+    /// <returns></returns>
     public FormModel GetModel()
     {
-        return _formModel();
+        return new FormModel(_type);
+    }
+
+    /// <summary>
+    ///     Creates a new set of widgets using the type backing this FormFactory.
+    ///     Use these to auto-generate any views the user may see.
+    /// </summary>
+    /// <returns></returns>
+    public List<IFormField> GetWidgets()
+    {
+        var result = new List<IFormField>();
+        foreach (var field in GetFieldsProperties())
+        {
+            if (!_fieldFactory.TryGenerateField(field.Type, out var widget))
+            {
+                continue;
+            }
+
+            widget.FieldName = field.Name;
+            result.Add(widget);
+        }
+
+        return result;
     }
 
     public FormFactory(Type type, FormFieldFactory fieldFactory)
     {
-        _formModel = () => new FormModel(type);
+        _type = type;
         _fieldFactory = fieldFactory;
     }
 
     public FormFactory(Type type) : this(type, FormFieldFactory.Default)
     {
+    }
+
+    private List<(Type Type, string Name)> GetFieldsProperties()
+    {
+        var result = new List<(Type, string)>();
+        var isFormState = _type.IsAssignableFrom(typeof(FormState));
+
+        foreach (var member in _type.GetMembers())
+        {
+            if (member.MemberType != MemberTypes.Field && member.MemberType != MemberTypes.Property)
+            {
+                continue;
+            }
+
+            if (!isFormState && !member.HasCustomAttribute<FormFieldAttribute>())
+            {
+                continue;
+            }
+
+            var name = member.Name;
+            Type memberType;
+            switch (member.MemberType)
+            {
+                case MemberTypes.Field:
+                    var memberField = _type.GetField(member.Name)!;
+                    memberType = memberField.FieldType;
+
+                    break;
+                case MemberTypes.Property:
+                    var memberProperty = _type.GetProperty(member.Name)!;
+                    memberType = memberProperty.PropertyType;
+
+                    break;
+                default:
+                    throw new Exception("Reached invalid state.");
+            }
+
+            result.Add((memberType, name));
+        }
+
+        return result;
     }
 }
 
@@ -118,6 +195,11 @@ public sealed class FormManager
     public void RegisterType(Type type)
     {
         RegisterType(type, new FormFactory(type));
+    }
+
+    public bool TryGetFactory(Type type, [NotNullWhen(true)] out FormFactory? factory)
+    {
+        return _factories.TryGetValue(type, out factory);
     }
 }
 
