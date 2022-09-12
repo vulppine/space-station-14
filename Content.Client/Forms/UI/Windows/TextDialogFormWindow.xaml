@@ -1,0 +1,8 @@
+<windows:FormWindow xmlns="https://spacestation14.io"
+                  xmlns:widgets="clr-namespace:Content.Client.Forms.UI.Widgets"
+                  xmlns:windows="clr-namespace:Content.Client.Forms.UI.Windows">
+    <BoxContainer Orientation="Vertical">
+        <Label Name="DialogDescription" Text="{Loc 'form-ui-textformfield-default'}"/>
+        <widgets:TextFormField />
+    </BoxContainer>
+</windows:FormWindow>

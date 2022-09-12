@@ -1,6 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using Content.Client.Forms.UI.Widgets;
+using Content.Client.Forms.UI.Windows;
 using Content.Shared.Forms;
 using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
@@ -74,7 +76,7 @@ public sealed class FormFieldFactory : Dictionary<Type, Func<IFormField>>
     {
         return new()
         {
-            [typeof(string)] = () => new UI.TextFormField()
+            [typeof(string)] = () => new TextFormField()
         };
     }
 }
@@ -244,7 +246,10 @@ public sealed class FormManager
     ///     given instead.
     /// </summary>
     /// <param name="type"></param>
-    /// <returns></returns>
+    /// <returns>
+    ///     Custom window type specified by <see cref="FormDialogAttribute"/>,
+    ///     otherwise a default window.
+    /// </returns>
     public FormWindow GetWindow(Type type)
     {
         if (!_stateWindowBindings.TryGetValue(type, out var window))
@@ -257,28 +262,13 @@ public sealed class FormManager
     #endregion
 }
 
+[AttributeUsage(AttributeTargets.Class)]
 public sealed class FormDialogAttribute : Attribute
 {
-    public Type StateType;
+    public readonly Type StateType;
 
     public FormDialogAttribute(Type stateType)
     {
         StateType = stateType;
     }
 }
-
-/// <summary>
-///     Form window. By default, this is the parent class of all window types.
-///     Children of FormWindow can inherit this, and will become a valid
-///     window that can be instianted by FormManager. However, they must specify
-///     an attribute, [FormDialog(typeof(T))], so that the form manager knows that
-///     this window type is for this form dialog type.
-/// </summary>
-[Virtual]
-public class FormWindow : DefaultWindow
-{
-}
-
-[FormDialog(typeof(TextDialogFormState))]
-public sealed class TextDialogFormWindow : FormWindow
-{}
