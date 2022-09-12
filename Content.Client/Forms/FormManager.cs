@@ -5,6 +5,7 @@ using Content.Shared.Forms;
 using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
 using Robust.Client.UserInterface.CustomControls;
+using Robust.Shared.Reflection;
 using Robust.Shared.Utility;
 using TerraFX.Interop.Windows;
 
@@ -73,7 +74,7 @@ public sealed class FormFieldFactory : Dictionary<Type, Func<IFormField>>
     {
         return new()
         {
-            [typeof(string)] = () => new TextFormField()
+            [typeof(string)] = () => new UI.TextFormField()
         };
     }
 }
@@ -128,10 +129,6 @@ public sealed class FormFactory
         _fieldFactory = fieldFactory;
     }
 
-    public FormFactory(Type type) : this(type, FormFieldFactory.Default())
-    {
-    }
-
     private List<(Type Type, string Name)> GetFieldsProperties()
     {
         var result = new List<(Type, string)>();
@@ -179,12 +176,30 @@ public sealed class FormFactory
 /// </summary>
 public sealed class FormManager
 {
+    [Dependency] private readonly IDynamicTypeFactory _typeFactory = default!;
     /// <summary>
     ///     Default factory passed into all types. Specify a custom FormFactory, if you want
     ///     a custom set of FormFields.
     /// </summary>
     private readonly FormFieldFactory _defaultFactory = FormFieldFactory.Default();
     private readonly Dictionary<Type, FormFactory> _factories = new();
+    private readonly Dictionary<Type, Type> _stateWindowBindings = new();
+
+    public FormManager()
+    {
+        IoCManager.InjectDependencies(this);
+        var reflection = IoCManager.Resolve<IReflectionManager>();
+
+        foreach (var type in reflection.GetAllChildren<FormWindow>())
+        {
+            if (!type.TryGetCustomAttribute<FormDialogAttribute>(out var attr))
+            {
+                continue;
+            }
+
+            _stateWindowBindings.Add(attr.StateType, type);
+        }
+    }
 
     #region Registration
     /// <summary>
@@ -217,10 +232,29 @@ public sealed class FormManager
     }
     #endregion
 
+    #region Widget/window factories
     public bool TryGetFactory(Type type, [NotNullWhen(true)] out FormFactory? factory)
     {
         return _factories.TryGetValue(type, out factory);
     }
+
+    /// <summary>
+    ///     Gets a new form window based on the given state type. If the form
+    ///     state does not have a custom window type, a default window is
+    ///     given instead.
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public FormWindow GetWindow(Type type)
+    {
+        if (!_stateWindowBindings.TryGetValue(type, out var window))
+        {
+            return new FormWindow();
+        }
+
+        return (FormWindow) _typeFactory.CreateInstance(window);
+    }
+    #endregion
 }
 
 public sealed class FormDialogAttribute : Attribute

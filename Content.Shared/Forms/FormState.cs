@@ -19,6 +19,7 @@ public enum FormKey
 //
 // Forms will send a form state back to whatever sent it, but as the child
 // type, rather than the abstract FormState.
+[Serializable, NetSerializable]
 public abstract class FormState
 {
 }
