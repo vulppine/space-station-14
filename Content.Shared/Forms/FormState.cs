@@ -27,7 +27,8 @@ public abstract class FormState
 // Form field. Add this attribute to a form state's properties,
 // and you'll get the UI fields required.
 public sealed class FormFieldAttribute : Attribute
-{}
+{
+}
 
 /// <summary>
 ///     Text dialog form state.

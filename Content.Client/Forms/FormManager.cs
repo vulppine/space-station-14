@@ -1,12 +1,14 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using Content.Client.Forms.UI;
 using Content.Client.Forms.UI.Widgets;
 using Content.Client.Forms.UI.Windows;
 using Content.Shared.Forms;
 using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
 using Robust.Client.UserInterface.CustomControls;
+using Robust.Shared.Prototypes;
 using Robust.Shared.Reflection;
 using Robust.Shared.Utility;
 using TerraFX.Interop.Windows;
@@ -37,7 +39,7 @@ public sealed class FormFieldFactory : Dictionary<Type, Func<IFormField>>
     {
         if (ContainsKey(type))
         {
-            return;
+            throw new ArgumentException($"Type {type} is already registered in this factory.");
         }
 
         // We use the IDynamicTypeFactory method to create our instance.
@@ -179,6 +181,8 @@ public sealed class FormFactory
 public sealed class FormManager
 {
     [Dependency] private readonly IDynamicTypeFactory _typeFactory = default!;
+    [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
+
     /// <summary>
     ///     Default factory passed into all types. Specify a custom FormFactory, if you want
     ///     a custom set of FormFields.
@@ -235,10 +239,23 @@ public sealed class FormManager
     #endregion
 
     #region Widget/window factories
+    /// <summary>
+    ///     Tries to get a FormFactory for this given type.
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="factory"></param>
+    /// <returns></returns>
+    /// <remarks>
+    ///     If you want to register a custom type against FormManager, you should add that type
+    ///     upon a system initialization to the FormManager - whether it be the default one or not.
+    /// </remarks>
     public bool TryGetFactory(Type type, [NotNullWhen(true)] out FormFactory? factory)
     {
         return _factories.TryGetValue(type, out factory);
     }
+
+    // This is in here to avoid duplicating across EUI and BUI implementations
+    // of form windows.
 
     /// <summary>
     ///     Gets a new form window based on the given state type. If the form
@@ -250,14 +267,28 @@ public sealed class FormManager
     ///     Custom window type specified by <see cref="FormDialogAttribute"/>,
     ///     otherwise a default window.
     /// </returns>
-    public FormWindow GetWindow(Type type)
+    /// <remarks>
+    ///     Does not assume that the type passed into it is a valid type that can turn into a form.
+    ///     This should be handled at a higher level than this.
+    /// </remarks>
+    public FormWindow GetWindow(Type type, string settingsId)
     {
         if (!_stateWindowBindings.TryGetValue(type, out var window))
         {
             return new FormWindow();
         }
 
-        return (FormWindow) _typeFactory.CreateInstance(window);
+        var windowInstance = (FormWindow) _typeFactory.CreateInstance(window);
+
+        // For custom labels, if a form state instance uses them.
+        // TODO: Where do you even store the custom labels? On the entity???
+        if (!string.IsNullOrEmpty(settingsId) &&
+            _prototypeManager.TryIndex<FormLabelsPrototype>(settingsId, out var labels))
+        {
+            windowInstance.SetLabels(labels.Labels);
+        }
+
+        return windowInstance;
     }
     #endregion
 }

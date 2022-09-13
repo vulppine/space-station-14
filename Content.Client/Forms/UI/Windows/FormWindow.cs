@@ -12,4 +12,9 @@ namespace Content.Client.Forms.UI.Windows;
 [Virtual]
 public class FormWindow : DefaultWindow
 {
+    public virtual void SetLabels(IReadOnlyDictionary<string, string> labels)
+    {
+        // Default implementation (this) doesn't require this. Inheritors can instead
+        // implement this based on their own needs.
+    }
 }
