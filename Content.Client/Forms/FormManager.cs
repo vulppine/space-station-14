@@ -273,12 +273,9 @@ public sealed class FormManager
     /// </remarks>
     public FormWindow GetWindow(Type type, string settingsId)
     {
-        if (!_stateWindowBindings.TryGetValue(type, out var window))
-        {
-            return new FormWindow();
-        }
-
-        var windowInstance = (FormWindow) _typeFactory.CreateInstance(window);
+        var windowInstance = _stateWindowBindings.TryGetValue(type, out var window)
+            ? (FormWindow) _typeFactory.CreateInstance(window)
+            : new FormWindow();
 
         // For custom labels, if a form state instance uses them.
         // TODO: Where do you even store the custom labels? On the entity???
